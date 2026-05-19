@@ -1,0 +1,8 @@
+v0.1.0 — Initial Internal Track release.
+
+• Paste-in audit for AI agent transcripts.
+• BYO xAI API key (stored locally, never sent to AgentBill).
+• Ai-Bill-Auditor Skill bundled as the audit engine.
+• Cross-promotion deep link to ThumbGate Pro for desktop enforcement.
+
+Next: free-tier rate limit, Anthropic + OpenAI providers, background bill-spike notifications.

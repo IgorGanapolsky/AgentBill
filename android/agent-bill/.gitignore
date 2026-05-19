@@ -11,3 +11,6 @@ google-services.json
 release/
 **/*.jks
 **/*.keystore
+keystore.properties
+fastlane/report.xml
+fastlane/README.md
