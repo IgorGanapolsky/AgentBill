@@ -46,6 +46,30 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm-rules.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger
 
+      - name: Create Emulator E2E Test Script
+        run: |
+          cat << 'EOF' > android/agent-bill/run-tests.sh
+          #!/bin/bash
+          echo "Waiting for Android activity service to settle..."
+          for i in {1..30}; do
+            if adb shell service check activity | grep -q "found"; then
+              echo "Activity service is active!"
+              break
+            fi
+            echo "Activity service starting... waiting 10s ($i/30)"
+            sleep 10
+          done
+          echo "Sleeping an extra 30s to let systems stabilize..."
+          sleep 30
+          echo "Disabling animations..."
+          adb shell settings put global window_animation_scale 0.0
+          adb shell settings put global transition_animation_scale 0.0
+          adb shell settings put global animator_duration_scale 0.0
+          echo "Running instrumented E2E tests..."
+          ./gradlew connectedDebugAndroidTest
+          EOF
+          chmod +x android/agent-bill/run-tests.sh
+
       - name: Run Instrumented E2E UI Tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
@@ -56,23 +80,4 @@ jobs:
           emulator-options: -no-window -gpu off -no-audio -no-boot-anim -camera-back none
           disable-animations: false
           working-directory: android/agent-bill
-          script: |
-            echo "Waiting for Android activity service to settle..."
-            i=1
-            while [ $i -le 30 ]; do
-              if adb shell service check activity | grep -q "found"; then
-                echo "Activity service is active!"
-                break
-              fi
-              echo "Activity service starting... waiting 10s ($i/30)"
-              sleep 10
-              i=$((i+1))
-            done
-            echo "Sleeping an extra 30s to let systems and Package Manager stabilize..."
-            sleep 30
-            echo "Disabling animations..."
-            adb shell settings put global window_animation_scale 0.0
-            adb shell settings put global transition_animation_scale 0.0
-            adb shell settings put global animator_duration_scale 0.0
-            echo "Running instrumented E2E tests..."
-            ./gradlew connectedDebugAndroidTest
+          script: ./run-tests.sh
