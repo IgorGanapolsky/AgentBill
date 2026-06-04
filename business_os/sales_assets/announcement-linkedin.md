@@ -69,6 +69,29 @@
 > Runs in Grok (web/iOS/Android). Zero install.
 >
 > Block the patterns permanently: **thumbgate.ai**
+## Variant D — The Netflix Validation Hook (Newsjacking)
+
+> **Netflix engineer Tejas Chopra open-sourced an app to slash AI bills by 90% (Project Headroom).**
+>
+> Why? Because developer agents (Cursor, Claude Code) are bleeding tokens on repetitive boilerplate:
+> • KV Cache invalidation (changing timestamps/UUIDs in prompts)
+> • 5-minute prompt cache TTL expirations
+> • Uncompressed database schemas, server logs, and file listings
+>
+> If your agent keeps repeating the same mistakes or over-reading unchanged data, you are paying the "AI Repeat Tax".
+>
+> I built a free Grok Skill that audits your session logs for these exact leaks:
+>
+> → **`/ai-bill-auditor`**
+>
+> Paste your last week of Cursor / Claude Code / Codex transcripts. It returns:
+> • Top repeat-offender patterns (and cache-invalidation bugs) with estimated monthly $ leak
+> • The one-line prevention rule to skip the repeat
+> • Total monthly $ recoverable
+>
+> Runs in Grok (web/iOS/Android). Zero install.
+>
+> Block the patterns permanently via Pre-Action Gates: **thumbgate.ai**
 
 ---
 

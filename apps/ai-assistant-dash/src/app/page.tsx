@@ -2,6 +2,13 @@ import React from 'react';
 
 const blogPosts = [
   {
+    title: 'Beyond the Barber: Combining Token Compression (Headroom) with Governance (ThumbGate)',
+    excerpt: 'Trimming prompt sizes is only half the battle. Discover why you need both compression and governance to scale AI agents safely.',
+    slug: 'headroom-token-saving',
+    category: 'Optimization',
+    date: 'May 31, 2026',
+  },
+  {
     title: 'The AI Repeat Tax: How to find and fix token waste in Cursor/Claude Code',
     excerpt: 'Stop leaking money on repeated AI mistakes. Learn how to identify and block token waste with Pre-Action Gates.',
     slug: 'ai-repeat-tax',

@@ -2,6 +2,8 @@ package com.iganapolsky.agentbill.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.iganapolsky.agentbill.core.analysis.RedundancyAnalyzer
+import com.iganapolsky.agentbill.core.analysis.RedundancyReport
 import com.iganapolsky.agentbill.core.api.GrokApiClient
 import com.iganapolsky.agentbill.core.skills.SkillLoader
 import com.iganapolsky.agentbill.data.KeyStore
@@ -16,7 +18,7 @@ import kotlinx.coroutines.launch
 sealed interface AuditState {
     data object Idle : AuditState
     data object Loading : AuditState
-    data class Result(val text: String) : AuditState
+    data class Result(val text: String, val report: RedundancyReport? = null) : AuditState
     data class Error(val message: String, val needsKey: Boolean = false) : AuditState
 }
 
@@ -28,6 +30,9 @@ class AuditViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow<AuditState>(AuditState.Idle)
     val state: StateFlow<AuditState> = _state.asStateFlow()
+
+    // Local, deterministic Repeat Tax detector (Headroom-style). Independently unit-tested.
+    private val redundancy = RedundancyAnalyzer()
 
     val isSubscribed: StateFlow<Boolean> = keyStore.isSubscribed
     val remainingAuditCredits: StateFlow<Int> = keyStore.remainingAuditCredits
@@ -100,8 +105,12 @@ class AuditViewModel @Inject constructor(
                 keyStore.useAuditCredit()
             }
 
-            // 4. Inject Premium Agentic Governance Guardrails into the System Prompt
-            val systemPrompt = skills.loadAiBillAuditor() + "\n\n" + """
+            // 4. Local Repeat Tax scan — runs free, instantly, and gives Grok measured ground truth
+            //    instead of letting it guess token/$ numbers (STRICT TRUTH guardrail below).
+            val report = redundancy.analyze(input)
+
+            // 5. Inject Premium Agentic Governance Guardrails into the System Prompt
+            val systemPrompt = skills.loadAiBillAuditor() + "\n\n" + report.toEvidenceBlock() + "\n\n" + """
                 ## PREMIUM B2B AGENTIC GOVERNANCE GUARDRAILS (CRITICAL)
                 You are running in B2B STRICT MODE. Under this mandate, you MUST follow these reliability guardrails to prevent hallucination drift and ensure absolute correctness:
                 1. STRICT TRUTH: Never hallucinate any command, package name, or file path. If a value is not explicitly present in the session transcript or log, report it as 'unknown' rather than guessing.
@@ -118,7 +127,7 @@ class AuditViewModel @Inject constructor(
                     system = systemPrompt,
                     user = input,
                 )
-            }.onSuccess { _state.value = AuditState.Result(it) }
+            }.onSuccess { _state.value = AuditState.Result(it, report) }
                 .onFailure { _state.value = AuditState.Error(it.message ?: "Audit failed") }
         }
     }

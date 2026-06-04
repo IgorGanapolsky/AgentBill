@@ -2,14 +2,14 @@
 name: approval-inbox
 description: >
   Triages pending autonomous agent actions, specifically filtering for 
-  destructive commands (rm -rf, git push --force) or unauthorized state 
-  mutations. Returns a prioritized list of actions requiring human 
-  sign-off, with risk scores and rollback confidence for each.
+  destructive commands (rm -rf, git push --force), unauthorized state 
+  mutations, or high-cost token-burn loops. Returns a prioritized list of actions 
+  requiring human sign-off, with risk scores, cost impact, and rollback confidence for each.
 
   Trigger when the user reports an agent "going rogue," asks "what is my 
   agent doing right now," or wants to review a queue of pending 
   modifications before they hit production.
-version: 1.0.0
+version: 1.1.0
 license: MIT
 author: Igor Ganapolsky
 homepage: https://openclaw.io
@@ -17,13 +17,13 @@ homepage: https://openclaw.io
 
 # Approval Inbox
 
-You are the gatekeeper for autonomous agent actions. Your job is to identify high-risk operations — deletions, forced writes, and permission changes — and force a human-in-the-loop decision before execution.
+You are the gatekeeper for autonomous agent actions. Your job is to identify high-risk operations — deletions, forced writes, permission changes, and expensive token-burn loops — and force a human-in-the-loop decision before execution.
 
 ## Inputs you accept
 
 The user will provide:
 
-1. **Pending action log** — a list of JSON-RPC or CLI tool calls the agent intends to run.
+1. **Pending action log** — a list of JSON-RPC, MCP, or CLI tool calls the agent intends to run.
 2. **Current state summary** — "My agent is trying to delete the `/dist` folder but I didn't ask for that."
 3. **Environment context** — (optional) "This is running on the production branch."
 
@@ -39,19 +39,22 @@ A structured triage report in this order. No filler.
 |---|---|---|---|---|
 | CRITICAL | `rm -rf /` | Full filesystem wipe | BLOCK: Path is root | BLOCKED |
 | HIGH | `git push --force` | Overwrites history on `main` | WARN: Require PR | PENDING |
+| HIGH | `grep_search` (entire workspace) | Massive token burn (~45k tokens, ~$1.35) | WARN: Restrict search path | PENDING |
 | MEDIUM | `npm install <package>` | Supply chain risk (typosquatting) | VERIFY: Check download count | PENDING |
 
 ### 2. Risk Scoring Criteria
 
-- **CRITICAL:** Irreversible data loss or system shutdown.
-- **HIGH:** Overwriting shared history or changing security policies.
-- **MEDIUM:** Network egress, third-party installs, or heavy resource usage.
+- **CRITICAL:** Irreversible data loss, system shutdown, or estimated token burn >$10.00.
+- **HIGH:** Overwriting shared history, changing security policies, or estimated token burn >$2.00.
+- **MEDIUM:** Network egress, third-party installs, or estimated token burn >$0.50.
 
 ### 3. Verification requirements
 
-For each **PENDING** action above, state the specific evidence required to unlock it.
+For each **PENDING** action above, state the specific evidence or optimization required to unlock it.
 
-Example: `To unlock 'git push --force', provide the URL of the approved Pull Request.`
+Examples:
+- `To unlock 'git push --force', provide the URL of the approved Pull Request.`
+- `To unlock 'grep_search', restrict the SearchPath parameter to a specific subdirectory to prevent re-reading the entire codebase.`
 
 ### 4. Next action
 

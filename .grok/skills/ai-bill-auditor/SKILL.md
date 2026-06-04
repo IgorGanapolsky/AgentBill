@@ -2,10 +2,10 @@
 name: ai-bill-auditor
 description: >
   Audits an AI coding bill, agent transcript, or session log for repeated
-  mistakes that are quietly costing money — hallucinated imports, retry
-  loops, "let me try a different approach" cycles, redundant tool calls,
-  and force-pushes. Returns a ranked list of repeat-offender patterns with
-  estimated monthly cost, the corrective rule for each, and a one-click
+  mistakes that are quietly costing money — KV cache invalidations (dynamic variables),
+  expired 5-minute prompt cache TTLs, bloated tool payload dumps (database schemas/logs),
+  retry loops, redundant tool calls, and force-pushes. Returns a ranked list of repeat-offender
+  patterns with estimated monthly cost, the corrective rule for each, and a one-click
   path to permanently block them via ThumbGate Pre-Action Gates.
 
   Trigger when the user pastes an Anthropic/OpenAI/xAI billing summary,
@@ -41,13 +41,17 @@ A single response with these sections, in this order. Do not pad. Do not editori
 
 | # | Pattern | Occurrences | Est. tokens / repeat | Est. monthly $ | Why it costs you |
 |---|---|---|---|---|---|
-| 1 | _e.g., `git push --force` retried after correction_ | 7 | 4,200 | $14.70 | Each retry re-loads the full diff context |
+| 1 | _e.g., KV Cache Invalidation (Changing timestamp in system prompt)_ | 12 | 24,000 | $86.00 | Busts the prefix cache, requiring a full rewrite |
 
 Estimate token cost using these defaults unless the user supplies real numbers:
 - Sonnet 4.5: $3 / 1M input, $15 / 1M output
 - Opus: 5× Sonnet
 - Cursor avg session re-context on error: ~4k tokens
 - Agent retry after thumbs-down correction: ~6k tokens (re-reads the conversation)
+- KV Cache Invalidation (cache bust due to session UUIDs/timestamps): ~15k-30k tokens per bust
+- Prompt Cache Expiration (5-minute inactivity cache miss): 2x input token cost for rewrite
+- Verbose Tool Output Bloat (uncompressed server logs/database schemas): ~20k-50k tokens per dump
+- Context Rot / Lost-in-the-Middle loop: ~10k-40k tokens per re-run
 
 Round monthly estimates to the nearest dollar. Show your arithmetic in a footnote only if asked.
 
@@ -57,7 +61,10 @@ For every row above, give the **one-line prevention rule** that, if enforced bef
 
 Format: `WHEN <tool/action> AND <condition> THEN <block | warn | rewrite-to: X>`
 
-Example: `WHEN bash AND command matches "^git push.*--force" AND branch in {main,master,develop} THEN block`
+Examples:
+- `WHEN bash AND command matches "^git push.*--force" AND branch in {main,master,develop} THEN block`
+- `WHEN system_prompt AND template contains "{{date}}" OR template contains "{{session_uuid}}" THEN rewrite-to: static_aligned_key` (CacheAligner)
+- `WHEN tool_call AND output_length > 10000 AND schema_type == "json" THEN rewrite-to: compressed_summary_mcp` (CCR Context Compression)
 
 ### 3. Estimated monthly savings if all rules enforced
 

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.iganapolsky.agentbill.core.analysis.RedundancyReport
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -184,6 +186,7 @@ fun AuditScreen(
                     }
                 }
                 is AuditState.Result -> {
+                    s.report?.takeIf { it.hasFindings }?.let { RepeatTaxCard(it) }
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
                             Text("Audit result", style = MaterialTheme.typography.titleMedium)
@@ -435,5 +438,57 @@ fun PaywallOptionCard(
                 modifier = Modifier.padding(start = 32.dp)
             )
         }
+    }
+}
+
+/**
+ * Provable Repeat Tax headline — rendered from the local [RedundancyReport] measured by
+ * RedundancyAnalyzer (Headroom-style), so the numbers are computed locally, not LLM-hallucinated.
+ */
+@Composable
+private fun RepeatTaxCard(report: RedundancyReport) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A1B3D)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                "💸 Repeat Tax: ${report.redundancyPercent}% redundant tokens",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+            )
+            Text(
+                "~$%.2f/mo projected waste · measured locally, no API call".format(report.projectedMonthlyWasteUsd),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFC4B5FD),
+            )
+            RepeatTaxMetric("Total tokens", report.totalTokens.toString())
+            RepeatTaxMetric("Exact-duplicate tokens", report.exactDuplicateTokens.toString())
+            RepeatTaxMetric("Cache-busting blocks", report.cacheBustingBlocks.toString())
+            if (report.retryLoopHits > 0) {
+                RepeatTaxMetric("Retry-loop hits", report.retryLoopHits.toString())
+            }
+            if (report.toolBloatTokens > 0) {
+                RepeatTaxMetric("Tool-output bloat tokens", report.toolBloatTokens.toString())
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepeatTaxMetric(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+        )
     }
 }

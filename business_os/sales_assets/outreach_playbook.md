@@ -14,3 +14,8 @@
 *Focus: Technical Utility*
 
 > "Built an OSS Pre-Action Gate (ThumbGate) to stop autonomous agents from force-pushing protected branches or looping on hallucinated imports. MIT licensed. check it out: github.com/IgorGanapolsky/ThumbGate"
+
+## 4. The Netflix Validation Hook (Newsjacking)
+*Focus: News/Authority*
+
+> "Hi [Name], Netflix's senior engineer just open-sourced a tool (Project Headroom) to slash AI bills by 90% due to developer agents bleeding tokens on cache invalidations. We built an auditor that matches these exact leak profiles and generates prevention rules. Worth a 2-min look?"

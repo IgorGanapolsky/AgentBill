@@ -18,11 +18,13 @@ B. "PSA: your Claude bill is billing you twice for the same lesson — here's a 
 
 C. "Free Grok Skill: /ai-bill-auditor — finds the patterns your agent keeps repeating"
 
+D. "Netflix engineer created an app to slash AI bills by 90%. I built a free Grok Skill that audits your logs for those exact leaks."
+
 ---
 
 ## Body
 
-> I've been running 4 agents (Claude Code, Cursor, Codex, Gemini CLI) for ~6 months and my monthly bill kept creeping up even though my output didn't. Turned out a lot of it was the same mistake on repeat — force-pushes the agent kept retrying after correction, hallucinated imports it re-imported every session, "let me try a different approach" loops that re-loaded full context.
+> With Netflix's senior engineer open-sourcing Project Headroom last week to slash AI bills by 90% (by targeting KV cache invalidations, Claude's 5-minute cache expirations, and JSON redundancy), it's clear token waste is a massive problem. I've been running 4 agents (Claude Code, Cursor, Codex, Gemini CLI) for ~6 months and my monthly bill kept creeping up even though my output didn't. Turned out a lot of it was the same mistake on repeat — force-pushes the agent kept retrying after correction, hallucinated imports it re-imported every session, "let me try a different approach" loops that re-loaded full context.
 >
 > I built a Grok Skill that quantifies the waste:
 >

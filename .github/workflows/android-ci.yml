@@ -24,22 +24,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Make Gradle Wrapper Executable
-        run: chmod +x android/Agent-Bill/gradlew
+        run: chmod +x android/agent-bill/gradlew
 
       - name: Run JVM Unit Tests
         run: |
-          cd android/Agent-Bill
+          cd android/agent-bill
           ./gradlew testDebugUnitTest
 
       - name: Generate Code Coverage Report
         run: |
-          cd android/Agent-Bill
+          cd android/agent-bill
           ./gradlew jacocoTestReport
 
       - name: Verify Code Coverage Exists
         run: |
-          ls -lh android/Agent-Bill/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
-          ls -lh android/Agent-Bill/app/build/reports/jacoco/jacocoTestReport/html/index.html
+          ls -lh android/agent-bill/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          ls -lh android/agent-bill/app/build/reports/jacoco/jacocoTestReport/html/index.html
 
       - name: Enable KVM group permissions
         run: |
@@ -55,5 +55,5 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu off -no-audio -no-boot-anim -camera-back none
           disable-animations: true
-          working-directory: android/Agent-Bill
+          working-directory: android/agent-bill
           script: ./gradlew connectedDebugAndroidTest

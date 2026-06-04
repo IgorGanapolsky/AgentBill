@@ -23,4 +23,8 @@ android/*/fastlane/README.md
 # Throwaway screenshots taken during this session
 play-console-state.png
 *.png
-!android/Agent-Bill/**/*.png
+!android/agent-bill/**/*.png
+
+# Next.js and testing outputs
+.next/
+test-results/

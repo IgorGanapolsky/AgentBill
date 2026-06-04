@@ -1,5 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'AI Assistant Dashboard',
@@ -13,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <nav style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--card-border)' }}>
           <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <a href="/" style={{ fontSize: '1.25rem', fontWeight: '700', color: 'inherit' }}>Assistant Dash</a>

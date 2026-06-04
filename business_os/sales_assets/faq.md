@@ -43,3 +43,7 @@ Open an issue on github.com/IgorGanapolsky/grok-apps. Tag with `skill:<name>` if
 ### Are you going to add more Skills?
 
 Yes — but only after the existing ones validate. The decision threshold is in `business_os/experiments.md` (EXP-001). If the funnel doesn't move, the project pivots before adding more.
+
+### How does ThumbGate work with token compression tools like Project Headroom?
+
+Project Headroom is a "token barber" that compresses prompt context (logs, DOM trees, database schemas) to reduce raw model input costs. ThumbGate is an "agent bouncer" (governance/safety gate) that blocks repetitive loops, risky commands, and incorrect logic runs. Using them together provides both low token counts and safe agent execution.
