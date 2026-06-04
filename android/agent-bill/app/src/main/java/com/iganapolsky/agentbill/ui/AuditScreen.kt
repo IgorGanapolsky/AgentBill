@@ -1,5 +1,8 @@
 package com.iganapolsky.agentbill.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -209,6 +213,8 @@ fun PaywallDialog(
     var selectedOption by remember { mutableStateOf(0) } // 0 = B2B Pro, 1 = 7-Day Intro, 2 = Single Audit, 3 = Rewarded Ad
     var isAdPlaying by remember { mutableStateOf(false) }
     var isAdCompleted by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
 
     LaunchedEffect(isAdPlaying) {
         if (isAdPlaying) {
@@ -331,20 +337,12 @@ fun PaywallDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
+                        enabled = selectedOption == 3 || activity != null,
                         onClick = {
                             when (selectedOption) {
-                                0 -> {
-                                    viewModel.activateProB2B()
-                                    onDismiss()
-                                }
-                                1 -> {
-                                    viewModel.purchaseIntroOffer()
-                                    onDismiss()
-                                }
-                                2 -> {
-                                    viewModel.purchaseSingleCredit()
-                                    onDismiss()
-                                }
+                                0 -> activity?.let { viewModel.activateProB2B(it); onDismiss() }
+                                1 -> activity?.let { viewModel.purchaseIntroOffer(it); onDismiss() }
+                                2 -> activity?.let { viewModel.purchaseSingleCredit(it); onDismiss() }
                                 3 -> {
                                     isAdPlaying = true
                                 }
@@ -491,4 +489,14 @@ private fun RepeatTaxMetric(label: String, value: String) {
             color = Color.White,
         )
     }
+}
+
+/** Walks the ContextWrapper chain to find the hosting Activity (needed to launch Play billing). */
+private fun Context.findActivity(): Activity? {
+    var ctx: Context = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
