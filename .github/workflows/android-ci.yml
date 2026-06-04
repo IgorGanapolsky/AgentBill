@@ -49,11 +49,28 @@ jobs:
       - name: Run Instrumented E2E UI Tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 28
           target: google_apis
           arch: x86_64
           force-avd-creation: false
           emulator-options: -no-window -gpu off -no-audio -no-boot-anim -camera-back none
           disable-animations: false
           working-directory: android/agent-bill
-          script: ./gradlew connectedDebugAndroidTest
+          script: |
+            echo "Waiting for Android activity service to settle..."
+            for i in {1..30}; do
+              if adb shell service check activity | grep -q "found"; then
+                echo "Activity service is active!"
+                break
+              fi
+              echo "Activity service starting... waiting 10s ($i/30)"
+              sleep 10
+            done
+            echo "Sleeping an extra 30s to let systems and Package Manager stabilize..."
+            sleep 30
+            echo "Disabling animations..."
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
+            echo "Running instrumented E2E tests..."
+            ./gradlew connectedDebugAndroidTest
