@@ -45,10 +45,9 @@ jobs:
       # --- Instrumented E2E: research-verified stable emulator setup (June 2026) ---
       # KVM is NOT granted by default on ubuntu runners; without it x86_64 emulators fall back to
       # software rendering and hit boot-timeout / ShellCommandUnresponsiveException / broken-pipe.
-      # Emulator E2E is expensive (~8 min). Skip on PRs to conserve Actions minutes;
-      # it still runs on pushes to main and via manual workflow_dispatch.
+      # AgentBill is a PUBLIC repo, so GitHub-hosted Actions minutes are free/unlimited — run the
+      # full E2E on every PR and push for maximum coverage (workflow_dispatch also available).
       - name: Enable KVM
-        if: github.event_name != 'pull_request'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -58,7 +57,6 @@ jobs:
       # warm-boots instead of cold-booting. Cold boots are the root cause of the
       # "ShellCommandUnresponsiveException -> Unknown API Level -> 0 compatible devices" failure.
       - name: AVD cache
-        if: github.event_name != 'pull_request'
         uses: actions/cache@v4
         id: avd-cache
         with:
@@ -68,7 +66,7 @@ jobs:
           key: avd-api29-google_apis-x86_64
 
       - name: Create AVD and generate clean snapshot
-        if: github.event_name != 'pull_request' && steps.avd-cache.outputs.cache-hit != 'true'
+        if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 29
@@ -80,7 +78,6 @@ jobs:
           script: echo "Generated clean AVD snapshot for caching."
 
       - name: Run Instrumented E2E UI Tests
-        if: github.event_name != 'pull_request'
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 29
