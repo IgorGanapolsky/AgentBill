@@ -13,17 +13,17 @@ this — but it needs **one secret** you must add (it's a credential, so it can'
 
 2. **Add it as a GitHub secret**
    - GitHub → repo **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `FIREBASE_SERVICE_ACCOUNT`
+   - Name: `FIREBASE_SERVICE_ACCOUNT_JSON`
    - Value: paste the **entire contents** of the JSON file.
 
 3. **Create the tester group**
-   - Firebase Console → **App Distribution → Testers & Groups** → create a group named **`testers`**
+   - Firebase Console → **App Distribution → Testers & Groups** → create a group named **`internal-testers`**
      and add your own email (and anyone else who should get builds).
 
 ## Get a build
 
 - GitHub → **Actions → "Firebase App Distribution" → Run workflow** (optionally type release notes).
-- ~3–4 minutes later you (and the `testers` group) get an email / Firebase App Tester notification
+- ~3–4 minutes later you (and the `internal-testers` group) get an email / Firebase App Tester notification
   with the installable APK.
 
 ## Important caveat

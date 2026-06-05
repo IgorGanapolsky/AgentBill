@@ -40,9 +40,10 @@ jobs:
         with:
           # Android App ID from google-services.json (not a secret — ships in every APK).
           appId: "1:859477231475:android:3f1d19d04dfef89b1f6706"
-          # Add this GitHub secret: a Firebase service-account JSON with the
-          # "Firebase App Distribution Admin" role. See docs/FIREBASE_DISTRIBUTION.md.
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          groups: testers
+          # Same secret name + tester group convention as the sibling AnswerGuard repo,
+          # so the setup process matches. Add a Firebase service-account JSON (App
+          # Distribution Admin role) for the agentbill-distribution project as this secret.
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          groups: internal-testers
           releaseNotes: ${{ github.event.inputs.notes }}
           file: android/agent-bill/app/build/outputs/apk/debug/app-debug.apk
