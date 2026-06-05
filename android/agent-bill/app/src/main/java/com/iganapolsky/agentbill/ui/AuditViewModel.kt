@@ -1,10 +1,12 @@
 package com.iganapolsky.agentbill.ui
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iganapolsky.agentbill.core.analysis.RedundancyAnalyzer
 import com.iganapolsky.agentbill.core.analysis.RedundancyReport
 import com.iganapolsky.agentbill.core.api.GrokApiClient
+import com.iganapolsky.agentbill.core.billing.RevenueCatBilling
 import com.iganapolsky.agentbill.core.skills.SkillLoader
 import com.iganapolsky.agentbill.data.KeyStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +29,7 @@ class AuditViewModel @Inject constructor(
     private val grok: GrokApiClient,
     private val skills: SkillLoader,
     private val keyStore: KeyStore,
+    private val billing: RevenueCatBilling,
 ) : ViewModel() {
     private val _state = MutableStateFlow<AuditState>(AuditState.Idle)
     val state: StateFlow<AuditState> = _state.asStateFlow()
@@ -37,31 +40,31 @@ class AuditViewModel @Inject constructor(
     val isSubscribed: StateFlow<Boolean> = keyStore.isSubscribed
     val remainingAuditCredits: StateFlow<Int> = keyStore.remainingAuditCredits
 
-    fun purchaseSingleCredit() {
+    /**
+     * Real purchases now. Each routes through Play billing via RevenueCat and only grants the
+     * entitlement on a verified transaction (the grant happens inside [RevenueCatBilling]). A
+     * successful purchase clears the "limit reached" error; a failure surfaces it to the user.
+     */
+    fun purchaseSingleCredit(activity: Activity) = launchPurchase(activity, RevenueCatBilling.SKU_SINGLE)
+
+    fun purchaseIntroOffer(activity: Activity) = launchPurchase(activity, RevenueCatBilling.SKU_INTRO)
+
+    fun activateProB2B(activity: Activity) = launchPurchase(activity, RevenueCatBilling.SKU_PRO)
+
+    private fun launchPurchase(activity: Activity, sku: String) {
         viewModelScope.launch {
-            keyStore.addAuditCredits(1)
-            // If we were in Error state due to limit, clear it back to Idle
-            if (_state.value is AuditState.Error && (_state.value as AuditState.Error).message.contains("limit")) {
-                _state.value = AuditState.Idle
+            when (val outcome = billing.purchase(activity, sku)) {
+                RevenueCatBilling.PurchaseOutcome.Success -> clearLimitError()
+                RevenueCatBilling.PurchaseOutcome.Cancelled -> Unit // user backed out; leave state as-is
+                is RevenueCatBilling.PurchaseOutcome.Failed ->
+                    _state.value = AuditState.Error("Purchase failed: ${outcome.message}")
             }
         }
     }
 
-    fun purchaseIntroOffer() {
-        viewModelScope.launch {
-            keyStore.addAuditCredits(10)
-            if (_state.value is AuditState.Error && (_state.value as AuditState.Error).message.contains("limit")) {
-                _state.value = AuditState.Idle
-            }
-        }
-    }
-
-    fun activateProB2B() {
-        viewModelScope.launch {
-            keyStore.setSubscribed(true)
-            if (_state.value is AuditState.Error && (_state.value as AuditState.Error).message.contains("limit")) {
-                _state.value = AuditState.Idle
-            }
+    private fun clearLimitError() {
+        if (_state.value is AuditState.Error && (_state.value as AuditState.Error).message.contains("limit")) {
+            _state.value = AuditState.Idle
         }
     }
 

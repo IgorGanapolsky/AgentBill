@@ -1,6 +1,8 @@
 package com.iganapolsky.agentbill.ui
 
+import android.app.Activity
 import com.iganapolsky.agentbill.core.api.GrokApiClient
+import com.iganapolsky.agentbill.core.billing.RevenueCatBilling
 import com.iganapolsky.agentbill.core.skills.SkillLoader
 import com.iganapolsky.agentbill.data.KeyStore
 import kotlinx.coroutines.Dispatchers
@@ -43,32 +45,43 @@ class AuditViewModelTest {
         val mockGrok = mock(GrokApiClient::class.java)
         val mockSkills = mock(SkillLoader::class.java)
         val mockKeyStore = mock(KeyStore::class.java)
+        val mockBilling = mock(RevenueCatBilling::class.java)
+        val mockActivity = mock(Activity::class.java)
 
         `when`(mockKeyStore.isSubscribed).thenReturn(MutableStateFlow(false))
         `when`(mockKeyStore.remainingAuditCredits).thenReturn(MutableStateFlow(0))
+        runBlocking {
+            whenever(mockBilling.purchase(any(), any())).thenReturn(RevenueCatBilling.PurchaseOutcome.Success)
+        }
 
-        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore)
+        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore, mockBilling)
 
         // 1. Single credit purchase
-        viewModel.purchaseSingleCredit()
+        viewModel.purchaseSingleCredit(mockActivity)
         testDispatcher.scheduler.advanceUntilIdle()
-        verify(mockKeyStore).addAuditCredits(1)
+        runBlocking {
+            verify(mockBilling).purchase(mockActivity, RevenueCatBilling.SKU_SINGLE)
+        }
 
         // 2. Intro offer purchase
-        viewModel.purchaseIntroOffer()
+        viewModel.purchaseIntroOffer(mockActivity)
         testDispatcher.scheduler.advanceUntilIdle()
-        verify(mockKeyStore).addAuditCredits(10)
+        runBlocking {
+            verify(mockBilling).purchase(mockActivity, RevenueCatBilling.SKU_INTRO)
+        }
 
         // 3. Pro active activation
-        viewModel.activateProB2B()
+        viewModel.activateProB2B(mockActivity)
         testDispatcher.scheduler.advanceUntilIdle()
-        verify(mockKeyStore).setSubscribed(true)
+        runBlocking {
+            verify(mockBilling).purchase(mockActivity, RevenueCatBilling.SKU_PRO)
+        }
 
         // 4. Rewarded sponsor ad
         var adCompleted = false
         viewModel.watchRewardedAd { adCompleted = true }
         testDispatcher.scheduler.advanceUntilIdle()
-        verify(mockKeyStore, times(2)).addAuditCredits(1) // 1 from earlier + 1 from ad
+        verify(mockKeyStore).addAuditCredits(1)
         assertTrue(adCompleted)
 
         assertNotNull(viewModel)
@@ -79,12 +92,13 @@ class AuditViewModelTest {
         val mockGrok = mock(GrokApiClient::class.java)
         val mockSkills = mock(SkillLoader::class.java)
         val mockKeyStore = mock(KeyStore::class.java)
+        val mockBilling = mock(RevenueCatBilling::class.java)
 
         `when`(mockKeyStore.isSubscribed).thenReturn(MutableStateFlow(true))
         `when`(mockKeyStore.remainingAuditCredits).thenReturn(MutableStateFlow(5))
         `when`(mockKeyStore.xaiKey).thenReturn(MutableStateFlow("")) // Empty key
 
-        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore)
+        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore, mockBilling)
         assertEquals(AuditState.Idle, viewModel.state.value)
 
         viewModel.audit("dummy input")
@@ -101,12 +115,13 @@ class AuditViewModelTest {
         val mockGrok = mock(GrokApiClient::class.java)
         val mockSkills = mock(SkillLoader::class.java)
         val mockKeyStore = mock(KeyStore::class.java)
+        val mockBilling = mock(RevenueCatBilling::class.java)
 
         `when`(mockKeyStore.isSubscribed).thenReturn(MutableStateFlow(false))
         `when`(mockKeyStore.remainingAuditCredits).thenReturn(MutableStateFlow(0)) // 0 credits
         `when`(mockKeyStore.xaiKey).thenReturn(MutableStateFlow("valid_key"))
 
-        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore)
+        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore, mockBilling)
 
         viewModel.audit("dummy input")
         testDispatcher.scheduler.advanceUntilIdle()
@@ -121,6 +136,7 @@ class AuditViewModelTest {
         val mockGrok = mock(GrokApiClient::class.java)
         val mockSkills = mock(SkillLoader::class.java)
         val mockKeyStore = mock(KeyStore::class.java)
+        val mockBilling = mock(RevenueCatBilling::class.java)
 
         `when`(mockKeyStore.isSubscribed).thenReturn(MutableStateFlow(false))
         `when`(mockKeyStore.remainingAuditCredits).thenReturn(MutableStateFlow(3))
@@ -128,7 +144,7 @@ class AuditViewModelTest {
 
         `when`(mockSkills.loadAiBillAuditor()).thenReturn("System System System")
 
-        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore)
+        val viewModel = AuditViewModel(mockGrok, mockSkills, mockKeyStore, mockBilling)
 
         // Mock Grok complete call
         val expectedResult = "Audit Summary: $120 AI bill repeat tax waste."
