@@ -16,6 +16,8 @@ val keystoreProps = Properties().apply {
     if (f.exists()) load(f.inputStream())
 }
 
+val ciVersionCode = providers.gradleProperty("ciVersionCode").orNull?.toIntOrNull()
+
 android {
     namespace = "com.iganapolsky.agentbill"
     compileSdk = 35
@@ -24,7 +26,7 @@ android {
         applicationId = "com.iganapolsky.agentbill"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
+        versionCode = ciVersionCode ?: 7
         versionName = "0.1.3"
         vectorDrawables { useSupportLibrary = true }
     }
