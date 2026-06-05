@@ -1,0 +1,48 @@
+name: Firebase App Distribution
+
+# Manual-only (workflow_dispatch) so it never auto-burns Actions minutes.
+# Builds a debug APK from the current ref and ships it to Firebase App
+# Distribution testers. Good for UI / smoke testing on a real device.
+# NOTE: Google Play Billing purchases do NOT work from a Firebase-distributed
+# build — real purchase testing requires a Play Internal Testing track.
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Release notes shown to testers"
+        required: false
+        default: "Manual test build"
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/agent-bill/gradlew
+          cd android/agent-bill
+          ./gradlew assembleDebug
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          # Android App ID from google-services.json (not a secret — ships in every APK).
+          appId: "1:859477231475:android:3f1d19d04dfef89b1f6706"
+          # Add this GitHub secret: a Firebase service-account JSON with the
+          # "Firebase App Distribution Admin" role. See docs/FIREBASE_DISTRIBUTION.md.
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: testers
+          releaseNotes: ${{ github.event.inputs.notes }}
+          file: android/agent-bill/app/build/outputs/apk/debug/app-debug.apk
