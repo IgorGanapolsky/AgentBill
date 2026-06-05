@@ -41,7 +41,7 @@ class AuditViewModelTest {
     }
 
     @Test
-    fun testPurchaseActionsAndAdCompletion() {
+    fun testPurchaseActionsRouteThroughBilling() {
         val mockGrok = mock(GrokApiClient::class.java)
         val mockSkills = mock(SkillLoader::class.java)
         val mockKeyStore = mock(KeyStore::class.java)
@@ -76,13 +76,6 @@ class AuditViewModelTest {
         runBlocking {
             verify(mockBilling).purchase(mockActivity, RevenueCatBilling.SKU_PRO)
         }
-
-        // 4. Rewarded sponsor ad
-        var adCompleted = false
-        viewModel.watchRewardedAd { adCompleted = true }
-        testDispatcher.scheduler.advanceUntilIdle()
-        verify(mockKeyStore).addAuditCredits(1)
-        assertTrue(adCompleted)
 
         assertNotNull(viewModel)
     }

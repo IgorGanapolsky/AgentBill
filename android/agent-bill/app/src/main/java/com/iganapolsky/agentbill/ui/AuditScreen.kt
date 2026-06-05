@@ -210,31 +210,11 @@ fun PaywallDialog(
     onNavigateToSettings: () -> Unit,
     viewModel: AuditViewModel
 ) {
-    var selectedOption by remember { mutableStateOf(0) } // 0 = B2B Pro, 1 = 7-Day Intro, 2 = Single Audit, 3 = Rewarded Ad
-    var isAdPlaying by remember { mutableStateOf(false) }
-    var isAdCompleted by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf(0) } // 0 = B2B Pro, 1 = 7-Day Intro, 2 = Single Audit
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
 
-    LaunchedEffect(isAdPlaying) {
-        if (isAdPlaying) {
-            kotlinx.coroutines.delay(2500) // Simulate 2.5s streaming sponsor ad
-            viewModel.watchRewardedAd {
-                isAdCompleted = true
-            }
-        }
-    }
-
-    LaunchedEffect(isAdCompleted) {
-        if (isAdCompleted) {
-            kotlinx.coroutines.delay(1000) // Show success state for 1s
-            isAdPlaying = false
-            isAdCompleted = false
-            onDismiss()
-        }
-    }
-
-    Dialog(onDismissRequest = { if (!isAdPlaying) onDismiss() }) {
+    Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -248,25 +228,6 @@ fun PaywallDialog(
                 )
             )
         ) {
-            if (isAdPlaying) {
-                Column(
-                    modifier = Modifier.padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CircularProgressIndicator(color = Color(0xFFEC4899))
-                    Text(
-                        text = if (isAdCompleted) "✨ Reward Granted! +1 Credit" else "🎥 Streaming Sponsor Video Ad...",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = if (isAdCompleted) "Adding 1 sandbox audit credit to your account." else "Keep this window open to earn your free sandbox audit credit.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF94A3B8)),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
@@ -300,7 +261,7 @@ fun PaywallDialog(
                     )
 
                     Text(
-                        text = "Android monetization in 2026 has transitioned to Hybrid. Skip limits via Pro subscriptions, one-time passes, or rewarded sponsor ads.",
+                        text = "Unlock unlimited audits with B2B Pro, or grab a one-time pass.",
                         style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF94A3B8)),
                         textAlign = TextAlign.Center
                     )
@@ -327,25 +288,15 @@ fun PaywallDialog(
                         onClick = { selectedOption = 2 }
                     )
 
-                    PaywallOptionCard(
-                        title = "🎥 Watch Sponsor Ad (FREE, +1 Credit)",
-                        subtitle = "Watch a short rewarded video to earn 1 sandbox audit credit immediately.",
-                        selected = selectedOption == 3,
-                        onClick = { selectedOption = 3 }
-                    )
-
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
-                        enabled = selectedOption == 3 || activity != null,
+                        enabled = activity != null,
                         onClick = {
                             when (selectedOption) {
                                 0 -> activity?.let { viewModel.activateProB2B(it); onDismiss() }
                                 1 -> activity?.let { viewModel.purchaseIntroOffer(it); onDismiss() }
                                 2 -> activity?.let { viewModel.purchaseSingleCredit(it); onDismiss() }
-                                3 -> {
-                                    isAdPlaying = true
-                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -356,7 +307,7 @@ fun PaywallDialog(
                         )
                     ) {
                         Text(
-                            text = if (selectedOption == 3) "Watch Sponsor Video" else "Activate and Continue",
+                            text = "Activate and Continue",
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -384,7 +335,6 @@ fun PaywallDialog(
                         Text("Close", color = Color(0xFF94A3B8))
                     }
                 }
-            }
         }
     }
 }
