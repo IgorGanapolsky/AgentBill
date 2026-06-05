@@ -68,16 +68,6 @@ class AuditViewModel @Inject constructor(
         }
     }
 
-    fun watchRewardedAd(onComplete: () -> Unit) {
-        viewModelScope.launch {
-            keyStore.addAuditCredits(1)
-            if (_state.value is AuditState.Error && (_state.value as AuditState.Error).message.contains("limit")) {
-                _state.value = AuditState.Idle
-            }
-            onComplete()
-        }
-    }
-
     fun audit(input: String) {
         viewModelScope.launch {
             _state.value = AuditState.Loading
