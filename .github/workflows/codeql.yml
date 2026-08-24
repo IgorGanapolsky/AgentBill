@@ -20,19 +20,41 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Kotlin/Java must be EXTRACTED FROM A REAL BUILD. build-mode "none" cannot see
+          # Gradle-compiled sources, so this leg failed on every run since 2026-06-05 with
+          #   "CodeQL detected code written in Java/Kotlin but could not process any of it
+          #    using the 'none' build mode"
+          # Run the same Gradle assemble the android-ci workflow already uses instead.
           - language: java-kotlin
-            build-mode: none
+            build-mode: manual
           - language: javascript-typescript
             build-mode: none
     steps:
-      - name: Checkout
+      - name: Fetch sources
         uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+
+      # Manual build mode: whatever is compiled between init and analyze gets extracted.
+      - name: Build Android app for CodeQL extraction
+        if: matrix.language == 'java-kotlin'
+        working-directory: android/agent-bill
+        run: bash ./gradlew assembleDebug --no-daemon
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
