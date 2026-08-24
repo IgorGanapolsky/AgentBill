@@ -18,7 +18,7 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.iganapolsky.agentbill"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.iganapolsky.agentbill"
