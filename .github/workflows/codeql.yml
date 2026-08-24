@@ -40,13 +40,15 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      # Keep setup-gradle's dependency cache ENABLED. It caches the Gradle User Home
+      # (downloaded dependencies + the wrapper), not this project's task outputs, so it
+      # cannot make compilation be skipped - the --rerun-tasks / --no-build-cache flags
+      # below already guarantee a cold compile. Disabling it broke settings-plugin
+      # resolution instead: run 32778938594 died with
+      #   "Plugin [id: 'org.gradle.toolchains.foojay-resolver-convention'] was not found".
       - name: Setup Gradle
         if: matrix.language == 'java-kotlin'
         uses: gradle/actions/setup-gradle@v6
-        with:
-          # A cache hit means nothing recompiles, and CodeQL only sees code that
-          # is actually compiled while it is tracing. Always build cold here.
-          cache-disabled: true
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
