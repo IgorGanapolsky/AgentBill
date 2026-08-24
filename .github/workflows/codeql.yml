@@ -20,19 +20,57 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Kotlin/Java must be EXTRACTED FROM A REAL BUILD. build-mode "none" cannot see
+          # Gradle-compiled sources, so this leg failed on every run since 2026-06-05 with
+          #   "CodeQL detected code written in Java/Kotlin but could not process any of it
+          #    using the 'none' build mode"
+          # Run the same Gradle assemble the android-ci workflow already uses instead.
           - language: java-kotlin
-            build-mode: none
+            build-mode: manual
           - language: javascript-typescript
             build-mode: none
     steps:
-      - name: Checkout
+      - name: Fetch sources
         uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Keep setup-gradle's dependency cache ENABLED. It caches the Gradle User Home
+      # (downloaded dependencies + the wrapper), not this project's task outputs, so it
+      # cannot make compilation be skipped - the --rerun-tasks / --no-build-cache flags
+      # below already guarantee a cold compile. Disabling it broke settings-plugin
+      # resolution instead: run 32778938594 died with
+      #   "Plugin [id: 'org.gradle.toolchains.foojay-resolver-convention'] was not found".
+      - name: Setup Gradle
+        if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+
+      # Manual build mode: whatever is compiled between init and analyze gets extracted.
+      # kotlin.compiler.execution.strategy=in-process is the load-bearing flag - by default
+      # Kotlin compiles inside a separate long-lived daemon that CodeQL's tracer never sees,
+      # which yields "CodeQL could not process any code written in Java/Kotlin" even though
+      # the build succeeds. The --no-*-cache flags stop Gradle short-circuiting compilation.
+      - name: Build Android app for CodeQL extraction
+        if: matrix.language == 'java-kotlin'
+        working-directory: android/agent-bill
+        run: |
+          bash ./gradlew assembleDebug \
+            --no-daemon \
+            --no-build-cache \
+            --no-configuration-cache \
+            --rerun-tasks \
+            -Pkotlin.compiler.execution.strategy=in-process
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
