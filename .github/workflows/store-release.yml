@@ -30,7 +30,7 @@ jobs:
       precondition_blocked: ${{ steps.play_result.outputs.precondition_blocked }}
       version_code: ${{ steps.play_result.outputs.version_code }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fail fast on required Android release secrets
         env:
